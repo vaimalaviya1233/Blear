@@ -3,6 +3,7 @@ import SwiftUI
 /**
 TODO:
 - Use vector icon for the action extension icon.
+- Set `URL.itemCreator` on the exported file.
 */
 
 @main

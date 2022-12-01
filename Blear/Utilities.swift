@@ -916,9 +916,7 @@ extension CGImage {
 
 extension UIImage {
 	static func from(_ data: Data, maxPixelSize: Int) throws -> Self {
-		let cgImage = try CGImage.from(data, maxPixelSize: maxPixelSize)
-		let image = Self(cgImage: cgImage)
-		return image
+		Self(cgImage: try .from(data, maxPixelSize: maxPixelSize))
 	}
 }
 
@@ -1267,7 +1265,7 @@ struct ViewStorage<Value>: DynamicProperty {
 }
 
 
-private struct AccessNativeView: UIViewRepresentable {
+private struct AccessHostingView: UIViewRepresentable {
 	var callback: (UIView?) -> Void
 
 	func makeUIView(context: Context) -> UIView { .init() }
@@ -1283,17 +1281,17 @@ extension View {
 
 	- Important: Don't assume the view is in the view hierarchy on the first callback invocation.
 	*/
-	func accessNativeView(_ callback: @escaping (UIView?) -> Void) -> some View {
+	func accessHostingView(_ callback: @escaping (UIView?) -> Void) -> some View {
 		background {
-			AccessNativeView(callback: callback)
+			AccessHostingView(callback: callback)
 		}
 	}
 
 	/**
 	Access the window the view is contained in if any.
 	*/
-	func accessNativeWindow(_ callback: @escaping (UIWindow?) -> Void) -> some View {
-		accessNativeView { uiView in
+	func accessHostingWindow(_ callback: @escaping (UIWindow?) -> Void) -> some View {
+		accessHostingView { uiView in
 			guard let window = uiView?.window else {
 				return
 			}
@@ -1305,8 +1303,8 @@ extension View {
 	/**
 	Bind the native backing-window of a SwiftUI window to a property.
 	*/
-	func bindNativeWindow(_ window: Binding<UIWindow?>) -> some View {
-		accessNativeWindow {
+	func bindHostingWindow(_ window: Binding<UIWindow?>) -> some View {
+		accessHostingWindow {
 			window.wrappedValue = $0
 		}
 	}
@@ -1674,12 +1672,12 @@ extension SSApp {
 	@MainActor
 	static var currentScene: UIWindowScene? {
 		#if !APP_EXTENSION
-		return UIApplication.shared // swiftlint:disable:this first_where
+		return UIApplication.shared
 			.connectedScenes
 			.filter { $0.activationState == .foregroundActive }
 			.firstNonNil { $0 as? UIWindowScene }
 				// If it's called early on in the launch, the scene might not be active yet, so we fall back to the inactive state.
-				?? UIApplication.shared // swiftlint:disable:this first_where
+				?? UIApplication.shared
 					.connectedScenes
 					.filter { $0.activationState == .foregroundInactive }
 					.firstNonNil { $0 as? UIWindowScene }
